@@ -56,22 +56,22 @@ inline LogStream& log() { static LogStream l; return l; }
 
 
 // Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
-std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::map<stl::point, vertex>& vertexes)
+std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>& vertexes)
 {
 	if (begin == goal) {
 		return std::vector<vertex*> { begin }; // no path needed
 	}
 
 	auto vertex_set = std::vector<vertex*>();
-	auto dist = std::map<vertex*, double>();
-	auto prev = std::map<vertex*, vertex*>();
+	auto dist = std::vector<double>(vertexes.size());
+	auto prev = std::vector<vertex*>(vertexes.size());
 
-	for (auto& vert : vertexes) {
-		dist.insert(std::map<vertex*, double>::value_type(&vert.second, std::numeric_limits<double>::infinity()));
-		prev.insert(std::map<vertex*, vertex*>::value_type(&vert.second, nullptr));
-		vertex_set.push_back(&vert.second);
+	for (auto vert : vertexes) {
+		dist[vert->number] = std::numeric_limits<double>::infinity();
+		prev[vert->number] = nullptr;
+		vertex_set.push_back(vert);
 	}
-	dist.find(begin)->second = 0;
+	dist[begin->number] = 0;
 
 
 
@@ -80,30 +80,32 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::map<stl::point, 
 
 		for (auto vert : vertex_set)
 		{
-			ss << vert->number << "  " << dist.at(vert) << "   " << prev.at(vert) << "\n";
+			ss << vert->number << "  " << dist[vert->number] << "   " << prev[vert->number] << "\n";
 		}
 		ss << "\n";
 		return ss.str();
 	};
 
 	auto sortOnDist = [&](vertex* v1, vertex* v2) {
-		return dist.at(v1) > dist.at(v2);
+		return dist[v1->number] > dist[v2->number];
 	};
-	std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist);
+	std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // O(3n)
 	//log() << debugOutput();
 
 	while (!vertex_set.empty()) {
 
 		auto u = vertex_set.front();
-		std::pop_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); vertex_set.pop_back();
-		//log() << "u    : " << u->number << "  " << dist.at(u) << "   " << prev.at(u) << "\n";
+		if (u == nullptr) continue; // invalidated element
+		std::pop_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // O(2 lg(n))
+		vertex_set.pop_back();
+		//log() << "u    : " << u->number << "  " << dist[u->number] << "   " << prev[u->number] << "\n";
 
 		if (u == goal) {
 			auto s = std::vector<vertex*>();
-			if (prev.at(u) != nullptr) {
+			if (prev[u->number] != nullptr) {
 				while (u != nullptr) {
 					s.push_back(u);
-					u = prev.at(u);
+					u = prev[u->number];
 				}
 			}
 			return s;
@@ -111,11 +113,12 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::map<stl::point, 
 
 		for (auto v : u->neigbours)
 		{
-			auto alt = dist.at(u) + distance(u->p, v->p);
-			if (alt < dist.at(v)) {
-				dist.find(v)->second = alt;
+			// map::at O(log(n))
+			auto alt = dist[u->number] + distance(u->p, v->p);
+			if (alt < dist[v->number]) {
+				dist[v->number] = alt;
 				std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist);
-				prev.find(v)->second = u;
+				prev[v->number] = u;
 			}
 		}
 	}
@@ -156,8 +159,8 @@ std::vector<vertex*> calculatePath(int begin, int goal, std::string stl_file_nam
 	auto assureVertex = [&](stl::point& pt) -> vertex& {
 		auto find = vertexes.find(pt);
 		if (find == vertexes.end()) {
-			++vertexCount;
 			auto v = vertex(vertexCount, pt);
+			++vertexCount;
 			//vertexes[pt] = v;
 			vertexes.insert(std::map<stl::point, vertex>::value_type(pt, v));
 			//return v; Would pass a reference to a local declared variable that will be cleaned up after this function call
@@ -190,7 +193,12 @@ std::vector<vertex*> calculatePath(int begin, int goal, std::string stl_file_nam
 		return t.second.number == goal;
 	});
 
-	auto path = dijkstra(&(it_begin->second), &(it_goal->second), vertexes); // choose 2 arbitrary points
+	auto vertexVec = std::vector<vertex*>(vertexes.size());
+	for (auto& vert : vertexes) {
+		vertexVec[vert.second.number] = &vert.second;
+	}
+
+	auto path = dijkstra(&(it_begin->second), &(it_goal->second), vertexVec); // choose 2 arbitrary points
 	log() << "Result: ";
 	for (auto& vert : path) log() << vert->number << " ";
 	log() << "\n";
@@ -208,12 +216,12 @@ int main(int argc, char* argv[]) {
 		std::cout << "ERROR: Too many command line arguments" << std::endl;
 	}
 	else {
-		calculatePath(3, 7, "./stl_parser/Box1x1x1.stl"); // 7 1 3
-		calculatePath(4, 7, "./stl_parser/Box1x1x1.stl"); // 7 4
-		calculatePath(5, 5, "./stl_parser/Box1x1x1.stl"); // 5
+		calculatePath(2, 6, "./stl_parser/Box1x1x1.stl");
+		calculatePath(3, 6, "./stl_parser/Box1x1x1.stl");
+		calculatePath(4, 4, "./stl_parser/Box1x1x1.stl");
 
-		calculatePath(1, 8, "../../test_models/1_sided_ampr_and_text_alt.stl"); // 8 6 5 4 1
-		calculatePath(1, 8, "../../test_models/BRACKET_EVO_II.STL"); // 8 7 12 13 15 18 20 6 5 23 31 28 29 33 34 36 38 1
+		calculatePath(1, 8, "../../test_models/1_sided_ampr_and_text_alt.stl");
+		calculatePath(1, 8, "../../test_models/BRACKET_EVO_II.STL");
 		calculatePath(1, 8, "../../test_models/stanford_dragon_flat_base.stl");
 		calculatePath(1, 8, "../../test_models/voronoi_bunny_with_loop.stl");
 	}
