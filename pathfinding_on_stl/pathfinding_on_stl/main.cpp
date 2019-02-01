@@ -5,7 +5,9 @@
 #include <string>
 #include <sstream>
 #include <array>
-#include <algorithm> 
+#include <algorithm>
+#include <map>
+#include <fstream>
 
 #include "stl_parser/parse_stl.h"
 
@@ -23,7 +25,6 @@ bool operator<(const vertex& l, const vertex& r) {
 	return l.number < r.number;
 }
 
-#include <map>
 
 float distance(stl::point a, stl::point b) {
 	auto dx = a.x - b.x;
@@ -31,6 +32,28 @@ float distance(stl::point a, stl::point b) {
 	auto dz = a.z - b.z;
 	return sqrt(dx*dx + dy*dy + dz*dz);
 }
+
+
+// https://stackoverflow.com/a/21232617/1448736
+struct LogStream 
+{
+	std::ofstream fs;
+	LogStream()
+	{
+		fs.open("cout.txt");
+	}
+
+	template<typename T> LogStream& operator<<(const T& mValue)
+	{
+		std::cout << mValue;
+		fs << mValue;
+		fs.flush();
+		return *this;
+	}
+};
+//LogStream l = LogStream();
+inline LogStream& log() { static LogStream l; return l; }
+
 
 // Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
 std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::map<stl::point, vertex>& vertexes)
@@ -67,16 +90,13 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::map<stl::point, 
 		return dist.at(v1) > dist.at(v2);
 	};
 	std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist);
-	std::cout << debugOutput();
+	//log() << debugOutput();
 
 	while (!vertex_set.empty()) {
 
-		std::cout << "== while loop =======================\n";
-		std::cout << debugOutput();
-
 		auto u = vertex_set.front();
 		std::pop_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); vertex_set.pop_back();
-		std::cout << "u    : " << u->number << "  " << dist.at(u) << "   " << prev.at(u) << "\n";
+		//log() << "u    : " << u->number << "  " << dist.at(u) << "   " << prev.at(u) << "\n";
 
 		if (u == goal) {
 			auto s = std::vector<vertex*>();
@@ -104,13 +124,13 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::map<stl::point, 
 }
 
 // Vizualize on http://webgraphviz.com/
-std::string MakeGraphviz(std::map<stl::point, vertex> vertexes)
+std::string MakeGraphviz(std::map<stl::point, vertex>& const vertexes)
 {
 	std::stringstream str;
 	str << "# You can visualise this file here: http://webgraphviz.com\n";
 	str << "digraph G {\n";
 	str << "   concentrate = true;\n";
-	for (auto vert : vertexes) {
+	for (auto& vert : vertexes) {
 		str << "   " << vert.second.number << ";\n";
 		for (auto neighbor : vert.second.neigbours)
 		{
@@ -121,21 +141,14 @@ std::string MakeGraphviz(std::map<stl::point, vertex> vertexes)
 	return str.str();
 }
 
-int main(int argc, char* argv[]) {
-	std::string stl_file_name = "./stl_parser/Box1x1x1.stl";
 
-	if (argc == 2) {
-		stl_file_name = argv[1];
-	}
-	else if (argc > 2) {
-		std::cout << "ERROR: Too many command line arguments" << std::endl;
-	}
-
+std::vector<vertex*> calculatePath(int begin, int goal, std::string stl_file_name)
+{
 	auto info = stl::parse_stl(stl_file_name);
 
 	std::vector<stl::triangle> triangles = info.triangles;
-	std::cout << "STL HEADER = " << info.name << std::endl;
-	std::cout << "# triangles = " << triangles.size() << std::endl;
+	log() << "\nstl_file_name: " << stl_file_name << "\n";
+	log() << "#triangles = " << triangles.size() << "\n";
 
 	auto vertexes = std::map<stl::point, vertex>();
 
@@ -148,6 +161,7 @@ int main(int argc, char* argv[]) {
 			//vertexes[pt] = v;
 			vertexes.insert(std::map<stl::point, vertex>::value_type(pt, v));
 			//return v; Would pass a reference to a local declared variable that will be cleaned up after this function call
+			// Pointers to elements in a map stay valid
 			return vertexes.find(pt)->second; // search again to return the new copy
 		}
 		else {
@@ -167,22 +181,42 @@ int main(int argc, char* argv[]) {
 		assureConnection(&v1, &v2);
 		assureConnection(&v2, &v3);
 		assureConnection(&v3, &v1);
-
-		//std::cout << t << std::endl;
 	}
 	auto graphviz = MakeGraphviz(vertexes);
+	auto it_begin = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
+		return t.second.number == begin;
+	});
+	auto it_goal = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
+		return t.second.number == goal;
+	});
 
-	int count = 0;
-	vertex* start = nullptr;
-	for (auto& pair : vertexes) {
-		++count;
-		if (count == 2)
-			start = &pair.second;
+	auto path = dijkstra(&(it_begin->second), &(it_goal->second), vertexes); // choose 2 arbitrary points
+	log() << "Result: ";
+	for (auto& vert : path) log() << vert->number << " ";
+	log() << "\n";
+	return path;
+}
+
+
+
+int main(int argc, char* argv[]) {
+	if (argc == 2) {
+		//stl_file_name = argv[1];
+		calculatePath(3, 7, argv[1]); // random path in figure
 	}
+	else if (argc > 2) {
+		std::cout << "ERROR: Too many command line arguments" << std::endl;
+	}
+	else {
+		calculatePath(3, 7, "./stl_parser/Box1x1x1.stl"); // 7 1 3
+		calculatePath(4, 7, "./stl_parser/Box1x1x1.stl"); // 7 4
+		calculatePath(5, 5, "./stl_parser/Box1x1x1.stl"); // 5
 
-	auto path = dijkstra(start, &vertexes.rbegin()->second, vertexes); // choose 2 arbitrary points
-	for (auto& vert : path) std::cout << vert->number << " ";
-	std::cout << "\n";
-
+		calculatePath(1, 8, "../../test_models/1_sided_ampr_and_text_alt.stl"); // 8 6 5 4 1
+		calculatePath(1, 8, "../../test_models/BRACKET_EVO_II.STL"); // 8 7 12 13 15 18 20 6 5 23 31 28 29 33 34 36 38 1
+		calculatePath(1, 8, "../../test_models/stanford_dragon_flat_base.stl");
+		calculatePath(1, 8, "../../test_models/voronoi_bunny_with_loop.stl");
+	}
 	std::cin.get();
+
 }
