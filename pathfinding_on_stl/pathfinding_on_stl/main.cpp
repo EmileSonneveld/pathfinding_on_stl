@@ -19,6 +19,8 @@ struct vertex {
 	int number;
 	stl::point p;
 	std::set<vertex*> neigbours = std::set<vertex*>();
+	vertex* prev = nullptr;
+	double dist = std::numeric_limits<double>::infinity();
 };
 
 bool operator<(const vertex& l, const vertex& r) {
@@ -35,7 +37,7 @@ float distance(stl::point a, stl::point b) {
 
 
 // https://stackoverflow.com/a/21232617/1448736
-struct LogStream 
+struct LogStream
 {
 	std::ofstream fs;
 	LogStream()
@@ -51,7 +53,6 @@ struct LogStream
 		return *this;
 	}
 };
-//LogStream l = LogStream();
 inline LogStream& log() { static LogStream l; return l; }
 
 
@@ -62,16 +63,17 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 		return std::vector<vertex*> { begin }; // no path needed
 	}
 
-	auto vertex_set = std::vector<vertex*>();
-	auto dist = std::vector<double>(vertexes.size());
-	auto prev = std::vector<vertex*>(vertexes.size());
+	auto vertex_set(vertexes);
+	//auto dist = std::vector<double>(vertexes.size());
+	//auto prev = std::vector<vertex*>(vertexes.size());
 
-	for (auto vert : vertexes) {
-		dist[vert->number] = std::numeric_limits<double>::infinity();
-		prev[vert->number] = nullptr;
-		vertex_set.push_back(vert);
-	}
-	dist[begin->number] = 0;
+	//for (auto vert : vertexes) {
+	//	//vert-> = std::numeric_limits<double>::infinity();
+	//	//vert = nullptr;
+	//	//vertex_set.push_back(vert);
+	//}
+	//dist[begin->number] = 0;
+	begin->dist = 0;
 
 
 
@@ -80,14 +82,14 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 
 		for (auto vert : vertex_set)
 		{
-			ss << vert->number << "  " << dist[vert->number] << "   " << prev[vert->number] << "\n";
+			ss << vert->number << "  " << vert->dist << "   " << vert->prev << "\n";
 		}
 		ss << "\n";
 		return ss.str();
 	};
 
 	auto sortOnDist = [&](vertex* v1, vertex* v2) {
-		return dist[v1->number] > dist[v2->number];
+		return v1->dist > v2->dist;
 	};
 	std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // O(3n)
 	//log() << debugOutput();
@@ -102,10 +104,10 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 
 		if (u == goal) {
 			auto s = std::vector<vertex*>();
-			if (prev[u->number] != nullptr) {
+			if (u->prev != nullptr) {
 				while (u != nullptr) {
 					s.push_back(u);
-					u = prev[u->number];
+					u = u->prev;
 				}
 			}
 			return s;
@@ -113,12 +115,11 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 
 		for (auto v : u->neigbours)
 		{
-			// map::at O(log(n))
-			auto alt = dist[u->number] + distance(u->p, v->p);
-			if (alt < dist[v->number]) {
-				dist[v->number] = alt;
-				std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist);
-				prev[v->number] = u;
+			auto alt = u->dist + distance(u->p, v->p);
+			if (alt < v->dist) {
+				v->dist = alt;
+				std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // Very expensive!
+				v->prev = u;
 			}
 		}
 	}
