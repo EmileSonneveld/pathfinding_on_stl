@@ -32,6 +32,7 @@ float distance(stl::point a, stl::point b) {
 	return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
+// Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
 std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::map<stl::point, vertex>& vertexes)
 {
 	if (begin == goal) {
@@ -43,7 +44,7 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::map<stl::point, 
 	auto prev = std::map<vertex*, vertex*>();
 
 	for (auto& vert : vertexes) {
-		dist.insert(std::map<vertex*, double>::value_type(&vert.second, std::numeric_limits<double>::infinity())); // vert.second.number)); // 
+		dist.insert(std::map<vertex*, double>::value_type(&vert.second, std::numeric_limits<double>::infinity()));
 		prev.insert(std::map<vertex*, vertex*>::value_type(&vert.second, nullptr));
 		vertex_set.push_back(&vert.second);
 	}

@@ -8,7 +8,7 @@
 
 namespace stl {
 
-  std::ostream& operator<<(std::ostream& out, const point p) {
+  std::ostream& operator<<(std::ostream& out, const point& p) {
     out << "(" << p.x << ", " << p.y << ", " << p.z << ")" << std::endl;
     return out;
   }
@@ -34,6 +34,17 @@ namespace stl {
     float y = parse_float(s);
     float z = parse_float(s);
     return point(x, y, z);
+  }
+
+  // Based on: https://stackoverflow.com/a/26084867/1448736
+  bool operator<(const stl::point& l, const stl::point& r) {
+	  if (l.x != r.x) {
+		  return l.x < r.x;
+	  }
+	  if (l.y != r.y) {
+		  return l.y < r.y;
+	  }
+	  return l.z < r.z;
   }
 
   stl_data parse_stl(const std::string& stl_path) {

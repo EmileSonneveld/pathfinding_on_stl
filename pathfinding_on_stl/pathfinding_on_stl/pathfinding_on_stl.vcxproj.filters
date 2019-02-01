@@ -23,7 +23,7 @@
     <ClCompile Include="stl_parser\parse_stl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="stl_parser\main.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

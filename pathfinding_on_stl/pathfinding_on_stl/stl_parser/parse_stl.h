@@ -15,6 +15,8 @@ namespace stl {
     point(float xp, float yp, float zp) : x(xp), y(yp), z(zp) {}
   };
 
+  bool operator<(const stl::point& l, const stl::point& r);
+
   struct triangle {
     point normal;
     point v1;
@@ -24,6 +26,7 @@ namespace stl {
       normal(normalp), v1(v1p), v2(v2p), v3(v3p) {}
   };
 
+  std::ostream& operator<<(std::ostream& out, const triangle& t);
   std::ostream& operator<<(std::ostream& out, const triangle& t);
 
   struct stl_data {
