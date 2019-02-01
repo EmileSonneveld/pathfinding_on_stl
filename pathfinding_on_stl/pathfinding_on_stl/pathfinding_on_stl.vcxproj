@@ -139,6 +139,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="stl_parser\parse_stl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stl_parser\main.cpp" />
+    <ClCompile Include="stl_parser\parse_stl.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
