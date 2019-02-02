@@ -21,6 +21,7 @@ struct vertex {
 	std::set<vertex*> neigbours = std::set<vertex*>();
 	vertex* prev = nullptr;
 	double dist = std::numeric_limits<double>::infinity();
+	double fScore = std::numeric_limits<double>::infinity(); // only for A*
 };
 
 bool operator<(const vertex& l, const vertex& r) {
@@ -28,12 +29,19 @@ bool operator<(const vertex& l, const vertex& r) {
 }
 
 
-float distance(stl::point a, stl::point b) {
+float distance(const stl::point& a, const stl::point& b) {
 	auto dx = a.x - b.x;
 	auto dy = a.y - b.y;
 	auto dz = a.z - b.z;
 	return sqrt(dx*dx + dy * dy + dz * dz);
 }
+
+
+struct compareOn_fScore_struct {
+	bool operator()(const vertex* const v1, const vertex* const v2) const {
+		return v1->fScore < v2->fScore;
+	}
+};
 
 
 // https://stackoverflow.com/a/21232617/1448736
@@ -56,16 +64,16 @@ struct LogStream
 inline LogStream& log() { static LogStream l; return l; }
 
 
-int heapGetParentIndex(int i) {
+unsigned int heapGetParentIndex(unsigned int i) {
 	return (int)floor((i - 1) / 2);
 }
-int heapGetLeftChild(int i) {
+unsigned int heapGetLeftChild(unsigned int i) {
 	return (i * 2) + 1;
 }
-int heapGetRightChild(int i) {
+unsigned int heapGetRightChild(unsigned int i) {
 	return (i * 2) + 2;
 }
-void heapSwap(std::vector<vertex*>& vec, int ia, int ib) {
+void heapSwap(std::vector<vertex*>& vec, unsigned int ia, unsigned int ib) {
 	auto tmp = vec[ia];
 	vec[ia] = vec[ib];
 	vec[ib] = tmp;
@@ -77,6 +85,7 @@ bool sortOnDist(vertex* v1, vertex* v2) {
 };
 void heapSiftUp(std::vector<vertex*>& vec, int index)
 {
+	if (index == 0) return;
 	auto val = vec[index];
 	auto parentI = heapGetParentIndex(index);
 	auto parent = vec[parentI];
@@ -113,7 +122,7 @@ void heapRevalidateElement(std::vector<vertex*>& vec, int index) {
 }
 
 
-int heapSearchElementIndex(std::vector<vertex*>& vec, vertex* needle, int finger = 0) {
+int heapSearchElementIndex(std::vector<vertex*>& vec, vertex* needle, unsigned int finger = 0) {
 	if (finger >= vec.size())
 		return -1;
 	auto el = vec[finger];
@@ -129,6 +138,27 @@ int heapSearchElementIndex(std::vector<vertex*>& vec, vertex* needle, int finger
 }
 
 
+std::string debugOutput(const std::vector<vertex*>& vertexes) {
+	std::stringstream ss;
+
+	for (auto vert : vertexes)
+	{
+		ss << vert->number << "  " << vert->dist << "   " << vert->prev << "\n";
+	}
+	ss << "\n";
+	return ss.str();
+};
+
+std::string debugOutputSet(const std::set<vertex*, compareOn_fScore_struct>& vertexes) {
+	std::stringstream ss;
+
+	for (auto vert : vertexes)
+	{
+		ss << vert->number << "  fScore: " << vert->fScore << "  " << vert->dist << "   " << vert->prev << "\n";
+	}
+	ss << "\n";
+	return ss.str();
+};
 
 // Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
 std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>& vertexes)
@@ -141,29 +171,13 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 	begin->dist = 0;
 
 
-
-	auto debugOutput = [&]() {
-		std::stringstream ss;
-
-		for (auto vert : vertex_set)
-		{
-			ss << vert->number << "  " << vert->dist << "   " << vert->prev << "\n";
-		}
-		ss << "\n";
-		return ss.str();
-	};
-
 	std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // O(3n)
-	//log() << debugOutput();
 
 	while (!vertex_set.empty()) {
 
 		auto u = vertex_set.front();
 		std::pop_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // O(2 lg(n))
 		vertex_set.pop_back();
-		//if (u == nullptr) continue; // invalidated element
-
-		//log() << "u    : " << u->number << "  " << dist[u->number] << "   " << prev[u->number] << "\n";
 
 		if (u == goal) {
 			auto s = std::vector<vertex*>();
@@ -188,7 +202,75 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 		}
 	}
 
-	return std::vector<vertex*>(); // nothing found
+	return std::vector<vertex*>(); // no path found
+}
+
+
+bool compareOn_fScore(const vertex* const v1, const vertex* const v2) {
+	if (v1->fScore != v2->fScore)
+		return v1->fScore < v2->fScore;
+	return v1 < v2; // Arbitrary comparison if floating point failed.
+};
+// Based on https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
+std::vector<vertex*> aStar(vertex* begin, vertex* goal, std::vector<vertex*>& vertexes)
+{
+	if (begin == goal) {
+		return std::vector<vertex*> { begin }; // no path needed
+	}
+
+	//std::map<vertex*> cameFrom; stored in vertex
+	//gScore stored as dist in vertex
+	begin->dist = 0;
+	//std::map<const vertex*, double> fScore;
+	begin->fScore = distance(begin->p, goal->p);
+	//fScore.insert(std::pair<vertex*, double>(begin, distance(begin->p, goal->p)));
+
+	std::set<vertex*> closed;
+	//std::set<vertex*, bool(*)(const vertex* const, const vertex* const)> open(compareOn_fScore);
+	std::set<vertex*, compareOn_fScore_struct> open;
+	open.insert(begin);
+
+	while (!open.empty())
+	{
+		std::cout << "== while loop ==========";
+
+		auto current = *open.begin();
+		std::cout << debugOutputSet(open);
+		auto vert = current;
+		std::cout << vert->number << "  fScore: " << vert->fScore << "  " << vert->dist << "   " << vert->prev << "\n";
+
+		if (current == goal) {
+			auto s = std::vector<vertex*>();
+			if (current->prev != nullptr) {
+				while (current != nullptr) {
+					s.push_back(current);
+					current = current->prev;
+				}
+			}
+			return s;
+		}
+
+		open.erase(current);
+		closed.insert(current);
+
+		for (auto neighbor : current->neigbours)
+		{
+			if (closed.find(neighbor) != closed.end())
+				continue;
+
+			auto tentative_gScore = current->dist + distance(current->p, neighbor->p);
+			if (open.find(neighbor) == open.end())
+				open.insert(neighbor);
+			else if (tentative_gScore >= neighbor->dist)
+				continue;
+			neighbor->prev = current;
+			neighbor->dist = tentative_gScore;
+			neighbor->fScore = neighbor->dist + distance(neighbor->p, goal->p);
+			open.erase(neighbor); // to keep the element sorted
+			open.insert(neighbor);
+		}
+	}
+	return std::vector<vertex*>(); // no path found
 }
 
 std::string MakePlainTextStlFromGraph(std::vector<vertex*>& path)
@@ -284,7 +366,8 @@ std::vector<vertex*> calculatePath(int begin, int goal, std::string stl_file_nam
 		vertexVec[vert.second.number] = &vert.second;
 	}
 
-	auto path = dijkstra(&(it_begin->second), &(it_goal->second), vertexVec); // choose 2 arbitrary points
+	auto path = dijkstra(&(it_begin->second), &(it_goal->second), vertexVec);
+	//auto path = aStar(&(it_begin->second), &(it_goal->second), vertexVec);
 	log() << "Result: ";
 	for (auto& vert : path) log() << vert->number << " ";
 	log() << "\n";
@@ -301,23 +384,16 @@ std::vector<vertex*> calculatePath(int begin, int goal, std::string stl_file_nam
 
 
 int main(int argc, char* argv[]) {
-	if (argc == 2) {
-		//stl_file_name = argv[1];
-		calculatePath(3, 7, argv[1]); // random path in figure
-	}
-	else if (argc > 2) {
-		std::cout << "ERROR: Too many command line arguments" << std::endl;
-	}
-	else {
-		calculatePath(2, 6, "./stl_parser/Box1x1x1.stl");
-		calculatePath(3, 6, "./stl_parser/Box1x1x1.stl");
-		calculatePath(4, 4, "./stl_parser/Box1x1x1.stl");
 
-		calculatePath(1, 8, "../../test_models/1_sided_ampr_and_text_alt.stl");
-		calculatePath(1, 8, "../../test_models/BRACKET_EVO_II.STL");
-		calculatePath(1, 8, "../../test_models/stanford_dragon_flat_base.stl");
-		calculatePath(1, 8, "../../test_models/voronoi_bunny_with_loop.stl");
-	}
+	std::vector<vertex*> p;
+	p = calculatePath(2, 6, "../../test_models/Box1x1x1.stl");
+	p = calculatePath(3, 6, "../../test_models/Box1x1x1.stl");
+	p = calculatePath(4, 4, "../../test_models/Box1x1x1.stl");
+
+	p = calculatePath(1, 8, "../../test_models/1_sided_ampr_and_text_alt.stl");
+	p = calculatePath(1, 8, "../../test_models/BRACKET_EVO_II.STL");
+	p = calculatePath(1, 8, "../../test_models/stanford_dragon_flat_base.stl");
+	p = calculatePath(1, 90, "../../test_models/voronoi_bunny_with_loop.stl");
+
 	std::cin.get();
-
 }

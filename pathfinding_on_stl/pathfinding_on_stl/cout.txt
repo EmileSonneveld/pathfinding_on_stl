@@ -1,13 +1,13 @@
 
-stl_file_name: ./stl_parser/Box1x1x1.stl
+stl_file_name: ../../test_models/Box1x1x1.stl
 #triangles = 12
 Result: 6 0 2 
 
-stl_file_name: ./stl_parser/Box1x1x1.stl
+stl_file_name: ../../test_models/Box1x1x1.stl
 #triangles = 12
 Result: 6 3 
 
-stl_file_name: ./stl_parser/Box1x1x1.stl
+stl_file_name: ../../test_models/Box1x1x1.stl
 #triangles = 12
 Result: 4 
 
@@ -25,4 +25,4 @@ Result: 8 4864 76504 57333 22005 22004 14843 6956 6955 53765 70729 68231 109295 
 
 stl_file_name: ../../test_models/voronoi_bunny_with_loop.stl
 #triangles = 329404
-Result: 8 6 4 2 1 
+Result: 90 77 64 51 38 25 1 
