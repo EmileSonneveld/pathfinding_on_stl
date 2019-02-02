@@ -1,0 +1,37 @@
+solid PathScene
+ facet normal 0 1 0
+  outer loop
+  vertex -4.01228 -5.11429 62.463
+  vertex -4.51228 -4.61429 62.463
+  vertex -4.51228 -5.11429 62.963
+  endloop
+ endfacet
+ facet normal 0 1 0
+  outer loop
+  vertex -3.9185 -4.76728 62.5087
+  vertex -4.4185 -4.26728 62.5087
+  vertex -4.4185 -4.76728 63.0087
+  endloop
+ endfacet
+ facet normal 0 1 0
+  outer loop
+  vertex -4.01228 -4.42028 62.5544
+  vertex -4.51228 -3.92028 62.5544
+  vertex -4.51228 -4.42028 63.0544
+  endloop
+ endfacet
+ facet normal 0 1 0
+  outer loop
+  vertex -4.2685 -4.16625 62.5878
+  vertex -4.7685 -3.66625 62.5878
+  vertex -4.7685 -4.16625 63.0878
+  endloop
+ endfacet
+ facet normal 0 1 0
+  outer loop
+  vertex -4.61849 -4.07327 62.6001
+  vertex -5.11849 -3.57327 62.6001
+  vertex -5.11849 -4.07327 63.1001
+  endloop
+ endfacet
+endsolid PathScene

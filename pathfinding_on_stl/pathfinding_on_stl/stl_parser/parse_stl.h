@@ -26,7 +26,7 @@ namespace stl {
       normal(normalp), v1(v1p), v2(v2p), v3(v3p) {}
   };
 
-  std::ostream& operator<<(std::ostream& out, const triangle& t);
+  std::ostream& operator<<(std::ostream& out, const point& p);
   std::ostream& operator<<(std::ostream& out, const triangle& t);
 
   struct stl_data {

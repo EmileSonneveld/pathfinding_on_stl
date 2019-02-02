@@ -191,6 +191,27 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 	return std::vector<vertex*>(); // nothing found
 }
 
+std::string MakePlainTextStlFromGraph(std::vector<vertex*>& path)
+{
+	std::stringstream str;
+	str << "solid PathScene\n";
+
+	for (auto vert : path) {
+		auto v1 = vert->p; v1.x += 0.5;
+		auto v2 = vert->p; v2.y += 0.5;
+		auto v3 = vert->p; v3.z += 0.5;
+		str << " facet normal 0 1 0\n";
+		str << "  outer loop\n";
+		str << "  vertex " << v1;
+		str << "  vertex " << v2;
+		str << "  vertex " << v3;
+		str << "  endloop\n";
+		str << " endfacet\n";
+	}
+	str << "endsolid PathScene\n";
+	return str.str();
+}
+
 // Vizualize on http://webgraphviz.com/
 std::string MakeGraphviz(std::map<stl::point, vertex>& const vertexes)
 {
@@ -267,6 +288,13 @@ std::vector<vertex*> calculatePath(int begin, int goal, std::string stl_file_nam
 	log() << "Result: ";
 	for (auto& vert : path) log() << vert->number << " ";
 	log() << "\n";
+
+	auto stl = MakePlainTextStlFromGraph(path);
+	std::ofstream fs;
+	fs.open(stl_file_name + "_path.stl");
+	fs << stl;
+	fs.flush();
+
 	return path;
 }
 

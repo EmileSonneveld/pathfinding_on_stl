@@ -9,7 +9,7 @@
 namespace stl {
 
   std::ostream& operator<<(std::ostream& out, const point& p) {
-    out << "(" << p.x << ", " << p.y << ", " << p.z << ")" << std::endl;
+    out << "" << p.x << " " << p.y << " " << p.z << "" << std::endl;
     return out;
   }
 
