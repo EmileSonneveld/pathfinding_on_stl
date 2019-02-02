@@ -32,7 +32,7 @@ float distance(stl::point a, stl::point b) {
 	auto dx = a.x - b.x;
 	auto dy = a.y - b.y;
 	auto dz = a.z - b.z;
-	return sqrt(dx*dx + dy*dy + dz*dz);
+	return sqrt(dx*dx + dy * dy + dz * dz);
 }
 
 
@@ -56,6 +56,80 @@ struct LogStream
 inline LogStream& log() { static LogStream l; return l; }
 
 
+int heapGetParentIndex(int i) {
+	return (int)floor((i - 1) / 2);
+}
+int heapGetLeftChild(int i) {
+	return (i * 2) + 1;
+}
+int heapGetRightChild(int i) {
+	return (i * 2) + 2;
+}
+void heapSwap(std::vector<vertex*>& vec, int ia, int ib) {
+	auto tmp = vec[ia];
+	vec[ia] = vec[ib];
+	vec[ib] = tmp;
+}
+bool sortOnDist(vertex* v1, vertex* v2) {
+	if (v1 == nullptr) return false;
+	if (v2 == nullptr) return true;
+	return v1->dist > v2->dist;
+};
+void heapSiftUp(std::vector<vertex*>& vec, int index)
+{
+	auto val = vec[index];
+	auto parentI = heapGetParentIndex(index);
+	auto parent = vec[parentI];
+	assert(parent >= 0);
+	if (parent == 0) return;
+	if (sortOnDist(parent, val)) {
+		heapSwap(vec, index, parentI);
+		heapSiftUp(vec, parentI);
+	}
+}
+void heapSiftDown(std::vector<vertex*>& vec, int index)
+{
+	auto li = heapGetLeftChild(index);
+	auto ri = heapGetRightChild(index);
+	if (li >= vec.size()) return; // no child nodes
+	int maxChildI = -1;
+	if (ri >= vec.size()) // only left child
+		maxChildI = li;
+	else {
+		auto vl = vec[li];
+		auto vr = vec[ri];
+		maxChildI = sortOnDist(vl, vr) ? ri : li;
+	}
+	if (sortOnDist(vec[index], vec[maxChildI])) {
+		heapSwap(vec, index, maxChildI);
+		heapSiftDown(vec, maxChildI);
+	}
+}
+// O( log(n) )
+void heapRevalidateElement(std::vector<vertex*>& vec, int index) {
+	// only one of these should have effect
+	heapSiftUp(vec, index);
+	heapSiftDown(vec, index);
+}
+
+
+int heapSearchElementIndex(std::vector<vertex*>& vec, vertex* needle, int finger = 0) {
+	if (finger >= vec.size())
+		return -1;
+	auto el = vec[finger];
+
+	if (el == needle) return finger;
+	if (sortOnDist(el, needle)) // maybe swap arguments?
+		return -1;
+	auto l = heapSearchElementIndex(vec, needle, heapGetLeftChild(finger));
+	if (l != -1) return l;
+	auto r = heapSearchElementIndex(vec, needle, heapGetRightChild(finger));
+	if (r != -1) return r;
+	return -1;
+}
+
+
+
 // Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
 std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>& vertexes)
 {
@@ -64,15 +138,6 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 	}
 
 	auto vertex_set(vertexes);
-	//auto dist = std::vector<double>(vertexes.size());
-	//auto prev = std::vector<vertex*>(vertexes.size());
-
-	//for (auto vert : vertexes) {
-	//	//vert-> = std::numeric_limits<double>::infinity();
-	//	//vert = nullptr;
-	//	//vertex_set.push_back(vert);
-	//}
-	//dist[begin->number] = 0;
 	begin->dist = 0;
 
 
@@ -88,18 +153,16 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 		return ss.str();
 	};
 
-	auto sortOnDist = [&](vertex* v1, vertex* v2) {
-		return v1->dist > v2->dist;
-	};
 	std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // O(3n)
 	//log() << debugOutput();
 
 	while (!vertex_set.empty()) {
 
 		auto u = vertex_set.front();
-		if (u == nullptr) continue; // invalidated element
 		std::pop_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // O(2 lg(n))
 		vertex_set.pop_back();
+		//if (u == nullptr) continue; // invalidated element
+
 		//log() << "u    : " << u->number << "  " << dist[u->number] << "   " << prev[u->number] << "\n";
 
 		if (u == goal) {
@@ -117,8 +180,9 @@ std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>&
 		{
 			auto alt = u->dist + distance(u->p, v->p);
 			if (alt < v->dist) {
+				auto vIndex = heapSearchElementIndex(vertex_set, v);
 				v->dist = alt;
-				std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // Very expensive!
+				heapRevalidateElement(vertex_set, vIndex);
 				v->prev = u;
 			}
 		}
