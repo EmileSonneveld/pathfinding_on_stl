@@ -4,30 +4,19 @@
 #include <set>
 #include <string>
 #include <sstream>
-#include <array>
 #include <algorithm>
 #include <map>
 #include <fstream>
 
 #include "stl_parser/parse_stl.h"
+#include "Vertex.h"
+#include "OpenNodesHeap.h"
 
 
-struct vertex {
-	vertex(int num, stl::point pt) : number(num), p(pt)
-	{
-	}
-	int number;
-	stl::point p;
-	std::set<vertex*> neigbours = std::set<vertex*>();
-	vertex* prev = nullptr;
-	double dist = std::numeric_limits<double>::infinity();
-	double fScore = std::numeric_limits<double>::infinity(); // only for A*
-};
 
-bool operator<(const vertex& l, const vertex& r) {
+bool operator<(const Vertex& l, const Vertex& r) {
 	return l.number < r.number;
 }
-
 
 float distance(const stl::point& a, const stl::point& b) {
 	auto dx = a.x - b.x;
@@ -35,14 +24,6 @@ float distance(const stl::point& a, const stl::point& b) {
 	auto dz = a.z - b.z;
 	return sqrt(dx*dx + dy * dy + dz * dz);
 }
-
-
-struct compareOn_fScore_struct {
-	bool operator()(const vertex* const v1, const vertex* const v2) const {
-		return v1->fScore < v2->fScore;
-	}
-};
-
 
 // https://stackoverflow.com/a/21232617/1448736
 struct LogStream
@@ -61,84 +42,11 @@ struct LogStream
 		return *this;
 	}
 };
+
 inline LogStream& log() { static LogStream l; return l; }
 
 
-unsigned int heapGetParentIndex(unsigned int i) {
-	return (int)floor((i - 1) / 2);
-}
-unsigned int heapGetLeftChild(unsigned int i) {
-	return (i * 2) + 1;
-}
-unsigned int heapGetRightChild(unsigned int i) {
-	return (i * 2) + 2;
-}
-void heapSwap(std::vector<vertex*>& vec, unsigned int ia, unsigned int ib) {
-	auto tmp = vec[ia];
-	vec[ia] = vec[ib];
-	vec[ib] = tmp;
-}
-bool sortOnDist(vertex* v1, vertex* v2) {
-	if (v1 == nullptr) return false;
-	if (v2 == nullptr) return true;
-	return v1->dist > v2->dist;
-};
-void heapSiftUp(std::vector<vertex*>& vec, int index)
-{
-	if (index == 0) return;
-	auto val = vec[index];
-	auto parentI = heapGetParentIndex(index);
-	auto parent = vec[parentI];
-	assert(parent >= 0);
-	if (parent == 0) return;
-	if (sortOnDist(parent, val)) {
-		heapSwap(vec, index, parentI);
-		heapSiftUp(vec, parentI);
-	}
-}
-void heapSiftDown(std::vector<vertex*>& vec, int index)
-{
-	auto li = heapGetLeftChild(index);
-	auto ri = heapGetRightChild(index);
-	if (li >= vec.size()) return; // no child nodes
-	int maxChildI = -1;
-	if (ri >= vec.size()) // only left child
-		maxChildI = li;
-	else {
-		auto vl = vec[li];
-		auto vr = vec[ri];
-		maxChildI = sortOnDist(vl, vr) ? ri : li;
-	}
-	if (sortOnDist(vec[index], vec[maxChildI])) {
-		heapSwap(vec, index, maxChildI);
-		heapSiftDown(vec, maxChildI);
-	}
-}
-// O( log(n) )
-void heapRevalidateElement(std::vector<vertex*>& vec, int index) {
-	// only one of these should have effect
-	heapSiftUp(vec, index);
-	heapSiftDown(vec, index);
-}
-
-
-int heapSearchElementIndex(std::vector<vertex*>& vec, vertex* needle, unsigned int finger = 0) {
-	if (finger >= vec.size())
-		return -1;
-	auto el = vec[finger];
-
-	if (el == needle) return finger;
-	if (sortOnDist(el, needle)) // maybe swap arguments?
-		return -1;
-	auto l = heapSearchElementIndex(vec, needle, heapGetLeftChild(finger));
-	if (l != -1) return l;
-	auto r = heapSearchElementIndex(vec, needle, heapGetRightChild(finger));
-	if (r != -1) return r;
-	return -1;
-}
-
-
-std::string debugOutput(const std::vector<vertex*>& vertexes) {
+std::string debugOutput(const std::vector<Vertex*>& vertexes) {
 	std::stringstream ss;
 
 	for (auto vert : vertexes)
@@ -149,7 +57,86 @@ std::string debugOutput(const std::vector<vertex*>& vertexes) {
 	return ss.str();
 };
 
-std::string debugOutputSet(const std::set<vertex*, compareOn_fScore_struct>& vertexes) {
+struct DijkstraResult
+{
+public:
+	DijkstraResult(std::vector<Vertex*> path, double length, bool pathFound) :
+		path(path), length(length), pathFound(pathFound)
+	{
+	}
+	std::vector<Vertex*> path;
+	double length;
+	bool pathFound;
+};
+
+std::ostream& operator<<(std::ostream& out, const DijkstraResult& result) {
+	out << "pathFound: " << result.pathFound << "\n";
+	if (result.pathFound) {
+		out << "Length: " << result.length << "\n";
+		out << "Path: ";
+		for (auto& vert : result.path) out << vert->number << " ";
+		out << "\n";
+	}
+	return out;
+}
+
+// Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
+DijkstraResult dijkstra(Vertex* begin, Vertex* goal, std::vector<Vertex*>& vertexes)
+{
+	if (begin == goal) {
+		DijkstraResult(std::vector<Vertex*> { begin }, 0, true); // no path needed
+	}
+
+	begin->dist = 0;
+	OpenNodesHeap vertexSet(vertexes);
+
+
+
+	while (!vertexSet.empty()) {
+
+		auto u = vertexSet.pop();
+
+		if (u == goal) {
+			// Chances are slim that we would find 2 paths with the same length, so we only return 1.
+			auto s = std::vector<Vertex*>();
+			if (u->prev != nullptr) {
+				while (u != nullptr) {
+					s.push_back(u);
+					u = u->prev;
+				}
+			}
+			return DijkstraResult(s, goal->dist, true);
+		}
+
+		for (auto v : u->neigbours)
+		{
+			auto alt = u->dist + distance(u->p, v->p);
+			if (alt < v->dist) {
+				auto vIndex = vertexSet.heapSearchElementIndex(v);
+				v->dist = alt;
+				vertexSet.heapRevalidateElement(vIndex);
+				v->prev = u;
+			}
+		}
+	}
+
+	return DijkstraResult(std::vector<Vertex*>(), -1, false); // no path found
+}
+
+
+/*
+
+bool compareFScore(const Vertex* const v1, const Vertex* const v2) {
+	return v1->fScore < v2->fScore;
+};
+
+struct CompareFScoreFunctor {
+	bool operator()(const vertex* const v1, const vertex* const v2) const {
+		return v1->fScore < v2->fScore;
+	}
+};
+
+std::string debugOutputSet(const std::set<vertex*, CompareFScoreFunctor>& vertexes) {
 	std::stringstream ss;
 
 	for (auto vert : vertexes)
@@ -160,74 +147,20 @@ std::string debugOutputSet(const std::set<vertex*, compareOn_fScore_struct>& ver
 	return ss.str();
 };
 
-// Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
-std::vector<vertex*> dijkstra(vertex* begin, vertex* goal, std::vector<vertex*>& vertexes)
-{
-	if (begin == goal) {
-		return std::vector<vertex*> { begin }; // no path needed
-	}
-
-	auto vertex_set(vertexes);
-	begin->dist = 0;
-
-
-	std::make_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // O(3n)
-
-	while (!vertex_set.empty()) {
-
-		auto u = vertex_set.front();
-		std::pop_heap(vertex_set.begin(), vertex_set.end(), sortOnDist); // O(2 lg(n))
-		vertex_set.pop_back();
-
-		if (u == goal) {
-			auto s = std::vector<vertex*>();
-			if (u->prev != nullptr) {
-				while (u != nullptr) {
-					s.push_back(u);
-					u = u->prev;
-				}
-			}
-			return s;
-		}
-
-		for (auto v : u->neigbours)
-		{
-			auto alt = u->dist + distance(u->p, v->p);
-			if (alt < v->dist) {
-				auto vIndex = heapSearchElementIndex(vertex_set, v);
-				v->dist = alt;
-				heapRevalidateElement(vertex_set, vIndex);
-				v->prev = u;
-			}
-		}
-	}
-
-	return std::vector<vertex*>(); // no path found
-}
-
-
-bool compareOn_fScore(const vertex* const v1, const vertex* const v2) {
-	if (v1->fScore != v2->fScore)
-		return v1->fScore < v2->fScore;
-	return v1 < v2; // Arbitrary comparison if floating point failed.
-};
 // Based on https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
+// Is not completely functional, and therefore left out of the solution
 std::vector<vertex*> aStar(vertex* begin, vertex* goal, std::vector<vertex*>& vertexes)
 {
 	if (begin == goal) {
 		return std::vector<vertex*> { begin }; // no path needed
 	}
 
-	//std::map<vertex*> cameFrom; stored in vertex
-	//gScore stored as dist in vertex
 	begin->dist = 0;
-	//std::map<const vertex*, double> fScore;
 	begin->fScore = distance(begin->p, goal->p);
-	//fScore.insert(std::pair<vertex*, double>(begin, distance(begin->p, goal->p)));
 
 	std::set<vertex*> closed;
-	//std::set<vertex*, bool(*)(const vertex* const, const vertex* const)> open(compareOn_fScore);
-	std::set<vertex*, compareOn_fScore_struct> open;
+	//std::set<vertex*, bool(*)(const vertex* const, const vertex* const)> open(compareFScore);
+	std::set<vertex*, CompareFScoreFunctor> open;
 	open.insert(begin);
 
 	while (!open.empty())
@@ -272,8 +205,9 @@ std::vector<vertex*> aStar(vertex* begin, vertex* goal, std::vector<vertex*>& ve
 	}
 	return std::vector<vertex*>(); // no path found
 }
+*/
 
-std::string MakePlainTextStlFromGraph(std::vector<vertex*>& path)
+std::string MakePlainTextStlFromGraph(std::vector<Vertex*>& path)
 {
 	std::stringstream str;
 	str << "solid PathScene\n";
@@ -294,8 +228,9 @@ std::string MakePlainTextStlFromGraph(std::vector<vertex*>& path)
 	return str.str();
 }
 
+// For debuging small meshes.
 // Vizualize on http://webgraphviz.com/
-std::string MakeGraphviz(std::map<stl::point, vertex>& const vertexes)
+std::string MakeGraphviz(std::map<stl::point, Vertex>& const vertexes)
 {
 	std::stringstream str;
 	str << "# You can visualise this file here: http://webgraphviz.com\n";
@@ -312,26 +247,23 @@ std::string MakeGraphviz(std::map<stl::point, vertex>& const vertexes)
 	return str.str();
 }
 
-
-std::vector<vertex*> calculatePath(int begin, int goal, std::string stl_file_name)
+std::vector<Vertex*> calculatePath(int begin, int goal, std::string stlFileName)
 {
-	auto info = stl::parse_stl(stl_file_name);
+	auto info = stl::parse_stl(stlFileName);
 
 	std::vector<stl::triangle> triangles = info.triangles;
-	log() << "\nstl_file_name: " << stl_file_name << "\n";
+	log() << "\nstlFileName: " << stlFileName << "\n";
 	log() << "#triangles = " << triangles.size() << "\n";
 
-	auto vertexes = std::map<stl::point, vertex>();
+	auto vertexes = std::map<stl::point, Vertex>();
 
 	int vertexCount = 0;
-	auto assureVertex = [&](stl::point& pt) -> vertex& {
+	auto assureVertex = [&](stl::point& pt) -> Vertex& {
 		auto find = vertexes.find(pt);
 		if (find == vertexes.end()) {
-			auto v = vertex(vertexCount, pt);
+			auto v = Vertex(vertexCount, pt);
 			++vertexCount;
-			//vertexes[pt] = v;
-			vertexes.insert(std::map<stl::point, vertex>::value_type(pt, v));
-			//return v; Would pass a reference to a local declared variable that will be cleaned up after this function call
+			vertexes.insert(std::map<stl::point, Vertex>::value_type(pt, v));
 			// Pointers to elements in a map stay valid
 			return vertexes.find(pt)->second; // search again to return the new copy
 		}
@@ -339,7 +271,7 @@ std::vector<vertex*> calculatePath(int begin, int goal, std::string stl_file_nam
 			return find->second;
 		}
 	};
-	auto assureConnection = [&](vertex* v1, vertex* v2) {
+	auto assureConnection = [&](Vertex* v1, Vertex* v2) {
 		if (v1->neigbours.find(v2) == v1->neigbours.end()) {
 			v1->neigbours.insert(v2);
 			v2->neigbours.insert(v1);
@@ -353,39 +285,38 @@ std::vector<vertex*> calculatePath(int begin, int goal, std::string stl_file_nam
 		assureConnection(&v2, &v3);
 		assureConnection(&v3, &v1);
 	}
-	auto graphviz = MakeGraphviz(vertexes);
-	auto it_begin = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
+	// auto graphviz = MakeGraphviz(vertexes);
+	auto itBegin = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
 		return t.second.number == begin;
 	});
-	auto it_goal = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
+	auto itGoal = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
 		return t.second.number == goal;
 	});
 
-	auto vertexVec = std::vector<vertex*>(vertexes.size());
+	auto vertexVec = std::vector<Vertex*>(vertexes.size());
 	for (auto& vert : vertexes) {
 		vertexVec[vert.second.number] = &vert.second;
 	}
 
-	auto path = dijkstra(&(it_begin->second), &(it_goal->second), vertexVec);
-	//auto path = aStar(&(it_begin->second), &(it_goal->second), vertexVec);
-	log() << "Result: ";
-	for (auto& vert : path) log() << vert->number << " ";
-	log() << "\n";
+	auto result = dijkstra(&(itBegin->second), &(itGoal->second), vertexVec);
+	//auto path = aStar(&(itBegin->second), &(itGoal->second), vertexVec);
 
-	auto stl = MakePlainTextStlFromGraph(path);
+	log() << result << "\n";
+
+	// For inspecting the resulting path.
+	auto stl = MakePlainTextStlFromGraph(result.path);
 	std::ofstream fs;
-	fs.open(stl_file_name + "_path.stl");
+	fs.open(stlFileName + "_path.stl");
 	fs << stl;
 	fs.flush();
 
-	return path;
+	return result.path;
 }
-
 
 
 int main(int argc, char* argv[]) {
 
-	std::vector<vertex*> p;
+	std::vector<Vertex*> p;
 	p = calculatePath(2, 6, "../../test_models/Box1x1x1.stl");
 	p = calculatePath(3, 6, "../../test_models/Box1x1x1.stl");
 	p = calculatePath(4, 4, "../../test_models/Box1x1x1.stl");
