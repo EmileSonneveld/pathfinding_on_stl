@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style type="text/css">
+	h1, h2, h3, .author{
+		text-align: center;
+		display: block;
+		white-space: normal;
+		margin-bottom: 0;
+	}
+	ul {
+		margin-top: 0;
+	    white-space: normal;
+	}
+	@page
+	{
+		margin: 20mm 20mm 20mm 20mm;  
+	}
+	.fluo {
+		background: #dd98ff;
+	    padding: 4px;
+	    border-radius: 4px;
+	}
+</style>
+</head>
+<body style="white-space: pre-wrap;">
+<h1>Materialise Internship Task</h1>
+<span class="author">Emile Sonneveld, emile.sonneveld@vub.be</span>
+<i>February 4, 2019</i>
+
+This report is accompanied by the following GIT repository: <a href="https://github.com/EmileSonneveld/pathfinding_on_stl">https://github.com/EmileSonneveld/pathfinding_on_stl</a>
+<h2>Report</h2>
+The program parses a STL file and finds the shortest path between 2 points on this mesh.
+First, the STL file will be converted to an internal format to work with. Then Dijkstra is applied on this algorithm.
+Special attention is made to the time complexity of the algorithm.
+
+<h3>Conversion from STL to internal representation</h3>
+The STL format is a collection of triangles, where each triangle has 3 vertices. Those vertices are a triple of 3 floating point values. Dijkstra needs connectivity information between vertices, so we convert to a more appropriate format first.
+When converting, the program will first go over all the triangles, and put its vertices in a <code>std::map</code>. So when the same coordinate is encountered twice, it will map to the same vertex representation. Meanwhile, a link between neighbor vertices is made. This link provides the required connectivity information.
+This conversion happens in <code class="fluo">O(t * log(v))</code> Where <code>t</code> is the number of triangles, and <code>v</code> is the number of vertexes.
+
+<center>
+Visual overview of the conversion:
+<img src="data_conversion.svg" style="width: 50%;">
+</center>
+
+
+
+
+<center>
+A visualization of <code>cube_graph.stl</code> in the converted format:
+<img src="cube_graph_graphviz.svg" style="width: 40%;">
+(Visualized with Graphviz)
+</center>
+<h3>Dijkstra in detail</h3>
+In our internal representation, we already reserved some fields to store the distance from start and the previous element in the shortest path to the root. By default, they respectively are positive infinite and <code>nullptr</code>.
+Dijkstra keeps a list of all vertices and how close they are to the start vertex. By default, each vertex will have a distance infinite. Only the start vertex will have 0.
+From this list, we always take the vertex with the smallest distance from the start and calculate the distance their neighbors will have. When the algorithm reaching a neighbor for the second time, he will check if this time it found a more optimal distance, and if so, will update the neighbor again. The way the algorithm works, will assure that this neighbor vertex is still in the list, and will only be processed when there is no chance that it will be updated again.
+At some point, the goal vertex will be taken from the list. Then the distance to the goal node will be the correct one and can be returned as a result.
+To calculate the path between start and goal, each vertex will keep a link to what neighbor was responsible for giving it it's smallest distance from start. This will technique will keep a linked list from each processed vertex to the start vertex. For vertices that are not in the open list anymore, we know that this path will be the shortest one. So, when it removes the goal node from the open list, the shortest path has been found.
+
+To make this process more performant, a heuristic can be added to put priority on vertexes that are more promising to reach the goal faster. The heuristic can be implemented by taking the Euclidean distance to the goal point. This would be A*. 
+
+As an implementation detail, the open-list has been implemented with a heap. The heap allows to take a vertex with the smallest distance while not needing to keep all elements sorted. Inserting and removing an element in this heap happens in <code>O(log(n))</code>. Special functionality is implemented to keep the internal structure of the heap valid while changing values in vertices. 
+	
+The complexity of the Dijkstra is depending and on searching the next vertex to process and the actual processing of this vertex. In the first part, we have a complexity of <code>O(v * log(v))</code>. And for the second part <code>O(m * log(v))</code>, where m=e/v or the mean number of neighbors per vertex. After adding those up, we can work out the math to get the total complexity of the algorithm.
+<code>O(v * log(v) + (e/v) * log(v))</code> <=> <code class="fluo">O((v+e) * log(v))</code>
+
+
+<h3>The code</h3>
+For parsing the binary STL files, the following library was used: <a href="https://github.com/dillonhuff/stl_parser">https://github.com/dillonhuff/stl_parser</a> (MIT license)
+Please note that in this project, when referring to STL, we refer to the 3d file format and not the c++ Standard Template Library.
+The code was written in Visual Studio Community 2017
+
+<h3>Testing</h3>
+<ul>
+	<li>3 small STL models where used to test the validity of the algorithm.</li>
+	<li>3 bigger STL models where used to test the performance of the algorithm.</li>
+</ul>The STL models, and the visualizations of their found path are added to the git repository.
+<center>
+The STL test models:
+<img src="test_models.png" style="width: 60%;"/>
+</center>
+<div style="float: right; border: black; border-width: 2px;  padding: 4px; margin: 3px;">A visualization of test_mesh
+<img src="test_mesh.svg" style="width: 150px;"/></div>
+<b>Validity: test_mesh.stl:</b> Between 0 and 4, the shortest path is 0~3~4. 
+<b>Validity: Box1x1x1.stl:</b> Between 2 extreme corner vertexes, multiple paths could be chosen. Dijkstra will take the first it encounters.
+<b>Validity: separated_triangles.stl:</b> No path should be found between vertexes of the 2 different triangles.
+<b>Performance: stanford_dragon_flat_base.stl:</b> The path on this model is tested by outputting the path to a new STL file and visually inspecting it. A screenshot of this path looks as follows:
+<div style="float: left">
+<img src="stanford_dragon_flat_base_shortest_path.PNG" style="width: 44%;"/>
+</div>
+
+</body>
+</html>
