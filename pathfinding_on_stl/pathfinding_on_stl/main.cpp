@@ -1,20 +1,25 @@
-#include <cassert>
-#include <iostream>
 #include <vector>
 #include <set>
+#include <map>
+#include <algorithm>
 #include <string>
 #include <sstream>
-#include <algorithm>
-#include <map>
+#include <iostream>
 #include <fstream>
+#include <chrono>
+
+#ifdef WIN32
+// for using _CrtDumpMemoryLeaks
+#   define _CRTDBG_MAP_ALLOC  
+#   include <stdlib.h>  
+#   include <crtdbg.h>  
+#endif
 
 #include "stl_parser/parse_stl.h"
 #include "Vertex.h"
 #include "OpenNodesHeap.h"
 
-
-
-bool operator<(const Vertex& l, const Vertex& r) {
+bool operator<(const GraphVertex& l, const GraphVertex& r) {
 	return l.number < r.number;
 }
 
@@ -46,7 +51,7 @@ struct LogStream
 inline LogStream& log() { static LogStream l; return l; }
 
 
-std::string debugOutput(const std::vector<Vertex*>& vertexes) {
+std::string debugOutput(const std::vector<GraphVertex*>& vertexes) {
 	std::stringstream ss;
 
 	for (auto vert : vertexes)
@@ -60,48 +65,48 @@ std::string debugOutput(const std::vector<Vertex*>& vertexes) {
 struct DijkstraResult
 {
 public:
-	DijkstraResult(std::vector<Vertex*> path, double length, bool pathFound) :
-		path(path), length(length), pathFound(pathFound)
+	DijkstraResult(std::vector<ResultVertex> path, double length, bool pathFound) :
+		path(path), length(length)
 	{
 	}
-	std::vector<Vertex*> path;
+	std::vector<ResultVertex> path;
 	double length;
-	bool pathFound;
 };
 
 std::ostream& operator<<(std::ostream& out, const DijkstraResult& result) {
-	out << "pathFound: " << result.pathFound << "\n";
-	if (result.pathFound) {
+	auto pathFound = result.length != std::numeric_limits<double>::infinity();
+	out << "pathFound: " << (pathFound ? "true" : "false") << "\n";
+	if (pathFound) {
 		out << "Length: " << result.length << "\n";
 		out << "Path: ";
-		for (auto& vert : result.path) out << vert->number << " ";
+		for (auto& vert : result.path) out << vert.number << " ";
 		out << "\n";
 	}
 	return out;
 }
 
 // Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
-DijkstraResult dijkstra(Vertex* begin, Vertex* goal, std::vector<Vertex*>& vertexes)
+DijkstraResult dijkstra(GraphVertex* begin, GraphVertex* goal, std::vector<GraphVertex*>& vertexes)
 {
 	if (begin == goal) {
-		DijkstraResult(std::vector<Vertex*> { begin }, 0, true); // no path needed
+		DijkstraResult(std::vector<ResultVertex> { begin->getResultCopy() }, 0, true); // no path needed
 	}
 
 	begin->dist = 0;
 	OpenNodesHeap vertexSet(vertexes);
 
-
-
 	while (!vertexSet.empty()) {
 
 		auto u = vertexSet.pop();
+		if (u->dist == std::numeric_limits<double>::infinity())
+			break; // This vertex belongs to a different cluster than the begin. No path found.
 
 		if (u == goal) {
 			// Chances are slim that we would find 2 paths with the same length, so we only return 1.
-			auto s = std::vector<Vertex*>();
+			auto s = std::vector<ResultVertex>();
 			if (u->prev != nullptr) {
 				while (u != nullptr) {
-					s.push_back(u);
+					s.push_back(u->getResultCopy());
 					u = u->prev;
 				}
 			}
@@ -120,13 +125,13 @@ DijkstraResult dijkstra(Vertex* begin, Vertex* goal, std::vector<Vertex*>& verte
 		}
 	}
 
-	return DijkstraResult(std::vector<Vertex*>(), -1, false); // no path found
+	return DijkstraResult(std::vector<ResultVertex>(), std::numeric_limits<double>::infinity(), false); // no path found
 }
 
 
 /*
 
-bool compareFScore(const Vertex* const v1, const Vertex* const v2) {
+bool compareFScore(const GraphVertex* const v1, const GraphVertex* const v2) {
 	return v1->fScore < v2->fScore;
 };
 
@@ -207,15 +212,15 @@ std::vector<vertex*> aStar(vertex* begin, vertex* goal, std::vector<vertex*>& ve
 }
 */
 
-std::string MakePlainTextStlFromGraph(std::vector<Vertex*>& path)
+std::string MakePlainTextStlFromGraph(std::vector<ResultVertex>& path)
 {
 	std::stringstream str;
 	str << "solid PathScene\n";
 
 	for (auto vert : path) {
-		auto v1 = vert->p; v1.x += 0.5;
-		auto v2 = vert->p; v2.y += 0.5;
-		auto v3 = vert->p; v3.z += 0.5;
+		auto v1 = vert.p; v1.x += 0.5;
+		auto v2 = vert.p; v2.y += 0.5;
+		auto v3 = vert.p; v3.z += 0.5;
 		str << " facet normal 0 1 0\n";
 		str << "  outer loop\n";
 		str << "  vertex " << v1;
@@ -230,7 +235,7 @@ std::string MakePlainTextStlFromGraph(std::vector<Vertex*>& path)
 
 // For debuging small meshes.
 // Vizualize on http://webgraphviz.com/
-std::string MakeGraphviz(std::map<stl::point, Vertex>& const vertexes)
+std::string MakeGraphviz(std::map<stl::point, GraphVertex>& const vertexes)
 {
 	std::stringstream str;
 	str << "# You can visualise this file here: http://webgraphviz.com\n";
@@ -247,23 +252,19 @@ std::string MakeGraphviz(std::map<stl::point, Vertex>& const vertexes)
 	return str.str();
 }
 
-std::vector<Vertex*> calculatePath(int begin, int goal, std::string stlFileName)
+DijkstraResult calculatePath(int begin, int goal, stl::stl_data stlData)
 {
-	auto info = stl::parse_stl(stlFileName);
+	auto vertexes = std::map<stl::point, GraphVertex>();
 
-	std::vector<stl::triangle> triangles = info.triangles;
-	log() << "\nstlFileName: " << stlFileName << "\n";
-	log() << "#triangles = " << triangles.size() << "\n";
-
-	auto vertexes = std::map<stl::point, Vertex>();
-
+	typedef std::chrono::high_resolution_clock Clock;
+	auto t1 = Clock::now();
 	int vertexCount = 0;
-	auto assureVertex = [&](stl::point& pt) -> Vertex& {
+	auto assureVertex = [&](stl::point& pt) -> GraphVertex& {
 		auto find = vertexes.find(pt);
 		if (find == vertexes.end()) {
-			auto v = Vertex(vertexCount, pt);
+			auto v = GraphVertex(vertexCount, pt);
 			++vertexCount;
-			vertexes.insert(std::map<stl::point, Vertex>::value_type(pt, v));
+			vertexes.insert(std::map<stl::point, GraphVertex>::value_type(pt, v));
 			// Pointers to elements in a map stay valid
 			return vertexes.find(pt)->second; // search again to return the new copy
 		}
@@ -271,13 +272,13 @@ std::vector<Vertex*> calculatePath(int begin, int goal, std::string stlFileName)
 			return find->second;
 		}
 	};
-	auto assureConnection = [&](Vertex* v1, Vertex* v2) {
+	auto assureConnection = [&](GraphVertex* v1, GraphVertex* v2) {
 		if (v1->neigbours.find(v2) == v1->neigbours.end()) {
 			v1->neigbours.insert(v2);
 			v2->neigbours.insert(v1);
 		}
 	};
-	for (auto t : info.triangles) {
+	for (auto t : stlData.triangles) {
 		auto& v1 = assureVertex(t.v1);
 		auto& v2 = assureVertex(t.v2);
 		auto& v3 = assureVertex(t.v3);
@@ -285,7 +286,11 @@ std::vector<Vertex*> calculatePath(int begin, int goal, std::string stlFileName)
 		assureConnection(&v2, &v3);
 		assureConnection(&v3, &v1);
 	}
-	// auto graphviz = MakeGraphviz(vertexes);
+	auto t2 = Clock::now();
+	std::cout << "Conversion time: " << (t2 - t1).count() << '\n';
+
+
+	//auto graphviz = MakeGraphviz(vertexes);
 	auto itBegin = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
 		return t.second.number == begin;
 	});
@@ -293,38 +298,60 @@ std::vector<Vertex*> calculatePath(int begin, int goal, std::string stlFileName)
 		return t.second.number == goal;
 	});
 
-	auto vertexVec = std::vector<Vertex*>(vertexes.size());
+	auto vertexVec = std::vector<GraphVertex*>(vertexes.size());
 	for (auto& vert : vertexes) {
 		vertexVec[vert.second.number] = &vert.second;
 	}
 
+	auto tDijkstra1 = Clock::now();
 	auto result = dijkstra(&(itBegin->second), &(itGoal->second), vertexVec);
 	//auto path = aStar(&(itBegin->second), &(itGoal->second), vertexVec);
+	auto tDijkstra2 = Clock::now();
+	std::cout << "Dijkstra time: " << (tDijkstra2 - tDijkstra1).count() << '\n';
+
+	return result;
+}
+
+void testCase(int begin, int goal, std::string stlFileName)
+{
+	auto stlData = stl::parse_stl(stlFileName);
+
+	std::vector<stl::triangle> triangles = stlData.triangles;
+	log() << "\nstlFileName: " << stlFileName << "\n";
+	log() << "#triangles = " << triangles.size() << "\n";
+
+	auto result = calculatePath(begin, goal, stlData);
 
 	log() << result << "\n";
 
 	// For inspecting the resulting path.
-	auto stl = MakePlainTextStlFromGraph(result.path);
 	std::ofstream fs;
 	fs.open(stlFileName + "_path.stl");
-	fs << stl;
+	fs << MakePlainTextStlFromGraph(result.path);
 	fs.flush();
-
-	return result.path;
 }
-
 
 int main(int argc, char* argv[]) {
 
-	std::vector<Vertex*> p;
-	p = calculatePath(2, 6, "../../test_models/Box1x1x1.stl");
-	p = calculatePath(3, 6, "../../test_models/Box1x1x1.stl");
-	p = calculatePath(4, 4, "../../test_models/Box1x1x1.stl");
+#ifdef WIN32
+	//_CrtSetBreakAlloc(*place some value here to debug*);
+#endif
+	//new GraphVertex(666, stl::point());
 
-	p = calculatePath(1, 8, "../../test_models/1_sided_ampr_and_text_alt.stl");
-	p = calculatePath(1, 8, "../../test_models/BRACKET_EVO_II.STL");
-	p = calculatePath(1, 8, "../../test_models/stanford_dragon_flat_base.stl");
-	p = calculatePath(1, 90, "../../test_models/voronoi_bunny_with_loop.stl");
+	// Nothing is done with the result of 
+	testCase(2, 6, "../../test_models/Box1x1x1.stl");
+	testCase(3, 6, "../../test_models/Box1x1x1.stl");
+	testCase(4, 4, "../../test_models/Box1x1x1.stl");
+	testCase(1, 4, "../../test_models/separated_triangles.stl"); // should not find a path
+
+	testCase(1, 8, "../../test_models/1_sided_ampr_and_text_alt.stl");
+	testCase(1, 8, "../../test_models/BRACKET_EVO_II.STL");
+	testCase(1, 8, "../../test_models/stanford_dragon_flat_base.stl");
+	testCase(1, 90, "../../test_models/voronoi_bunny_with_loop.stl");
 
 	std::cin.get();
+	
+#ifdef WIN32
+	_CrtDumpMemoryLeaks(); // To verify no memory was leaked.
+#endif
 }

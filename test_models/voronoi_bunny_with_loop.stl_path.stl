@@ -8,79 +8,37 @@ solid PathScene
  endfacet
  facet normal 0 1 0
   outer loop
-  vertex -4.61849 -6.15792 63.83
-  vertex -5.11849 -5.65792 63.83
-  vertex -5.11849 -6.15792 64.33
+  vertex -4.2685 -6.09161 63.8963
+  vertex -4.7685 -5.59161 63.8963
+  vertex -4.7685 -6.09161 64.3963
   endloop
  endfacet
  facet normal 0 1 0
   outer loop
-  vertex -4.61849 -5.94662 63.589
-  vertex -5.11849 -5.44662 63.589
-  vertex -5.11849 -5.94662 64.089
+  vertex -4.01228 -5.66894 63.8021
+  vertex -4.51228 -5.16894 63.8021
+  vertex -4.51228 -5.66894 64.3021
   endloop
  endfacet
  facet normal 0 1 0
   outer loop
-  vertex -4.61849 -5.76857 63.3226
-  vertex -5.11849 -5.26857 63.3226
-  vertex -5.11849 -5.76857 63.8226
+  vertex -3.9185 -5.16235 63.6726
+  vertex -4.4185 -4.66235 63.6726
+  vertex -4.4185 -5.16235 64.1726
   endloop
  endfacet
  facet normal 0 1 0
   outer loop
-  vertex -4.61849 -5.62683 63.0351
-  vertex -5.11849 -5.12683 63.0351
-  vertex -5.11849 -5.62683 63.5351
+  vertex -4.01228 -4.65675 63.437
+  vertex -4.51228 -4.15675 63.437
+  vertex -4.51228 -4.65675 63.937
   endloop
  endfacet
  facet normal 0 1 0
   outer loop
-  vertex -4.96849 -5.54018 63.071
-  vertex -5.46849 -5.04018 63.071
-  vertex -5.46849 -5.54018 63.571
-  endloop
- endfacet
- facet normal 0 1 0
-  outer loop
-  vertex -5.22471 -5.30347 63.1691
-  vertex -5.72471 -4.80347 63.1691
-  vertex -5.72471 -5.30347 63.6691
-  endloop
- endfacet
- facet normal 0 1 0
-  outer loop
-  vertex -5.22471 -5.18574 62.8223
-  vertex -5.72471 -4.68574 62.8223
-  vertex -5.72471 -5.18574 63.3223
-  endloop
- endfacet
- facet normal 0 1 0
-  outer loop
-  vertex -5.22471 -5.11429 62.463
-  vertex -5.72471 -4.61429 62.463
-  vertex -5.72471 -5.11429 62.963
-  endloop
- endfacet
- facet normal 0 1 0
-  outer loop
-  vertex -5.3185 -4.76728 62.5087
-  vertex -5.8185 -4.26728 62.5087
-  vertex -5.8185 -4.76728 63.0087
-  endloop
- endfacet
- facet normal 0 1 0
-  outer loop
-  vertex -5.22471 -4.42027 62.5544
-  vertex -5.72471 -3.92027 62.5544
-  vertex -5.72471 -4.42027 63.0544
-  endloop
- endfacet
- facet normal 0 1 0
-  outer loop
-  vertex -4.96849 -4.16625 62.5878
-  vertex -5.46849 -3.66625 62.5878
-  vertex -5.46849 -4.16625 63.0878
+  vertex -4.2685 -4.2621 63.0697
+  vertex -4.7685 -3.7621 63.0697
+  vertex -4.7685 -4.2621 63.5697
   endloop
  endfacet
  facet normal 0 1 0

@@ -9,13 +9,13 @@
 
 class OpenNodesHeap {
 
-	std::vector<Vertex*>& vertexSet;
+	std::vector<GraphVertex*>& vertexSet;
 
 public:
-	OpenNodesHeap(std::vector<Vertex*>& vertexes);
+	OpenNodesHeap(std::vector<GraphVertex*>& vertexes);
 
 	bool empty();
-	Vertex* pop();
+	GraphVertex* pop();
 
 	unsigned int heapGetParentIndex(unsigned int i);
 	unsigned int heapGetLeftChild(unsigned int i);
@@ -25,6 +25,6 @@ public:
 	void heapSiftDown(int index);
 	void heapRevalidateElement(int index); // O( log(n) )
 	
-	int heapSearchElementIndex(Vertex* needle, unsigned int finger = 0);
+	int heapSearchElementIndex(GraphVertex* needle, unsigned int finger = 0);
 
 };

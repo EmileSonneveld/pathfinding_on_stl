@@ -6,16 +6,27 @@
 
 #include "stl_parser/parse_stl.h"
 
-struct Vertex {
-	Vertex(int num, stl::point pt) : number(num), p(pt)
+struct ResultVertex {
+	ResultVertex(int num, stl::point pt) : number(num), p(pt)
 	{
 	}
 	int number;
 	stl::point p;
-	std::set<Vertex*> neigbours = std::set<Vertex*>();
-	Vertex* prev = nullptr;
-	double dist = std::numeric_limits<double>::infinity();
-	double fScore = std::numeric_limits<double>::infinity(); // only for A*
 };
 
-bool sortOnDist(Vertex* v1, Vertex* v2);
+struct GraphVertex : ResultVertex {
+	GraphVertex(int num, stl::point pt) : ResultVertex(num, pt)
+	{
+	}
+
+	std::set<GraphVertex*> neigbours = std::set<GraphVertex*>();
+	GraphVertex* prev = nullptr;
+	double dist = std::numeric_limits<double>::infinity();
+	//double fScore = std::numeric_limits<double>::infinity(); // only for A*
+
+	ResultVertex getResultCopy() {
+		return ResultVertex(number, p);
+	}
+};
+
+bool sortOnDist(GraphVertex* v1, GraphVertex* v2);

@@ -1,6 +1,6 @@
 #include "OpenNodesHeap.h"
 
-OpenNodesHeap::OpenNodesHeap(std::vector<Vertex*>& vertexes) :vertexSet(vertexes)
+OpenNodesHeap::OpenNodesHeap(std::vector<GraphVertex*>& vertexes) :vertexSet(vertexes)
 {
 	std::make_heap(vertexSet.begin(), vertexSet.end(), sortOnDist); // O(3n)
 }
@@ -10,7 +10,7 @@ bool OpenNodesHeap::empty()
 	return vertexSet.empty();
 }
 
-Vertex * OpenNodesHeap::pop()
+GraphVertex * OpenNodesHeap::pop()
 {
 	auto tmp = vertexSet.front();
 
@@ -76,13 +76,13 @@ void OpenNodesHeap::heapRevalidateElement(int index) {
 	heapSiftDown(index);
 }
 
-int OpenNodesHeap::heapSearchElementIndex(Vertex * needle, unsigned int finger) {
+int OpenNodesHeap::heapSearchElementIndex(GraphVertex * needle, unsigned int finger) {
 	if (finger >= vertexSet.size())
 		return -1;
 	auto el = vertexSet[finger];
 
 	if (el == needle) return finger;
-	if (sortOnDist(el, needle)) // maybe swap arguments?
+	if (sortOnDist(el, needle))
 		return -1;
 	auto l = heapSearchElementIndex(needle, heapGetLeftChild(finger));
 	if (l != -1) return l;
