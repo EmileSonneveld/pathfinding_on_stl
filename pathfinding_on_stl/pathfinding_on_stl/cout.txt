@@ -1,46 +1,48 @@
 
 stlFileName: ../../test_models/Box1x1x1.stl
 #triangles = 12
-Conversion time: 2322ms
-Dijkstra time: 396ms
-pathFound: true
-Length: 2.41421
-Path: 6 0 2 
+Conversion time: 50ms
+pathFound: false
 
 
 stlFileName: ../../test_models/Box1x1x1.stl
 #triangles = 12
-Conversion time: 1232ms
-Dijkstra time: 172ms
-pathFound: true
-Length: 1.41421
-Path: 6 3 
+Conversion time: 18ms
+pathFound: false
 
 
 stlFileName: ../../test_models/Box1x1x1.stl
 #triangles = 12
-Conversion time: 748ms
-Dijkstra time: 59ms
-pathFound: true
-Length: 0
-Path: 
+Conversion time: 23ms
+pathFound: false
 
 
 stlFileName: ../../test_models/test_mesh.stl
 #triangles = 3
-Conversion time: 707ms
-Dijkstra time: 148ms
-pathFound: true
-Length: 3.65028
-Path: 4 3 0 
+Conversion time: 22ms
+pathFound: false
 
 
 stlFileName: ../../test_models/separated_triangles.stl
 #triangles = 2
-Conversion time: 801ms
-Dijkstra time: 573ms
+Conversion time: 12ms
 pathFound: false
 
 
-stlFileName: ../../test_models/BRACKET_EVO_II.stl
+stlFileName: ../../test_models/BRACKET_EVO_II.STL
 #triangles = 53556
+Conversion time: 94719ms
+pathFound: false
+
+
+stlFileName: ../../test_models/stanford_dragon_flat_base.stl
+#triangles = 299890
+Conversion time: 1203427ms
+pathFound: false
+
+
+stlFileName: ../../test_models/voronoi_bunny_with_loop.stl
+#triangles = 329404
+Conversion time: 535629ms
+pathFound: false
+

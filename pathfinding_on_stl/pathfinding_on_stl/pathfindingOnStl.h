@@ -4,4 +4,4 @@
 #include "common.h"
 #include "OpenNodesHeap.h"
 
-DijkstraResult calculatePath(int begin, int goal, stl::stl_data stlData);
+DijkstraResult calculatePath(stl::point begin, stl::point goal, stl::stl_data stlData);

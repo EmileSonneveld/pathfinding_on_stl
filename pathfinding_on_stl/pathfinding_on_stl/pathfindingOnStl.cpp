@@ -38,6 +38,7 @@ std::string debugOutput(const std::vector<GraphVertex*>& vertexes) {
 
 
 // Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
+// Modified for better performance.
 DijkstraResult dijkstra(GraphVertex* begin, GraphVertex* goal, std::vector<GraphVertex*>& vertexes)
 {
 	if (begin == goal) {
@@ -193,7 +194,9 @@ long long millisecondsBetweenTimes(TimePoint t1, TimePoint t2)
 }
 
 // This is the actual functionality as defined in the assignement.
-DijkstraResult calculatePath(int begin, int goal, stl::stl_data stlData)
+
+// This is the actual functionality as defined in the assignement.
+DijkstraResult calculatePath(stl::point begin, stl::point goal, stl::stl_data stlData)
 {
 	auto vertexes = std::map<stl::point, GraphVertex>();
 
@@ -229,13 +232,14 @@ DijkstraResult calculatePath(int begin, int goal, stl::stl_data stlData)
 	auto t2 = Clock::now();
 	log() << "Conversion time: " << millisecondsBetweenTimes(t2, t1) << "ms\n";
 
-
 	auto itBegin = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
-		return t.second.number == begin;
+		return distance(t.second.p, begin) < 0.00001; // higher precision causes floating point problems
 	});
 	auto itGoal = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
-		return t.second.number == goal;
+		return distance(t.second.p, goal) < 0.00001; // higher precision causes floating point problems
 	});
+	assert(itBegin != vertexes.end());
+	assert(itGoal != vertexes.end());
 
 	auto vertexVec = std::vector<GraphVertex*>(vertexes.size());
 	for (auto& vert : vertexes) {
