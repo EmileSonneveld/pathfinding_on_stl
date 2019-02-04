@@ -5,7 +5,7 @@
 #include <string>
 #include <algorithm>
 
-#include "Vertex.h"
+#include "common.h"
 
 class OpenNodesHeap {
 
