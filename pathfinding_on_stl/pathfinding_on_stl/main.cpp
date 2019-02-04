@@ -234,29 +234,37 @@ std::string MakePlainTextStlFromGraph(std::vector<ResultVertex>& path)
 }
 
 // For debuging small meshes.
-// Vizualize on http://webgraphviz.com/
-std::string MakeGraphviz(std::map<stl::point, GraphVertex>& const vertexes)
+std::string MakeGraphviz(std::vector<GraphVertex*>& const vertexes)
 {
 	std::stringstream str;
 	str << "# You can visualise this file here: http://webgraphviz.com\n";
 	str << "digraph G {\n";
 	str << "   concentrate = true;\n";
+	str << "   rankdir = LR;\n";
 	for (auto& vert : vertexes) {
-		str << "   " << vert.second.number << ";\n";
-		for (auto neighbor : vert.second.neigbours)
+		str << "   " << vert->number << ";\n";
+		for (auto neighbor : vert->neigbours)
 		{
-			str << "   " << vert.second.number << " -> " << neighbor->number << ";\n";
+			str << "   " << vert->number << " -> " << neighbor->number << ";\n";
 		}
 	}
 	str << "};\n";
 	return str.str();
 }
 
+
+typedef std::chrono::high_resolution_clock Clock;
+typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
+long millisecondsBetweenTimes(TimePoint t1, TimePoint t2)
+{
+	return (t1 - t2).count() / 1000;
+}
+
+// This is the actual functionality as defined in the assignement.
 DijkstraResult calculatePath(int begin, int goal, stl::stl_data stlData)
 {
 	auto vertexes = std::map<stl::point, GraphVertex>();
 
-	typedef std::chrono::high_resolution_clock Clock;
 	auto t1 = Clock::now();
 	int vertexCount = 0;
 	auto assureVertex = [&](stl::point& pt) -> GraphVertex& {
@@ -287,10 +295,9 @@ DijkstraResult calculatePath(int begin, int goal, stl::stl_data stlData)
 		assureConnection(&v3, &v1);
 	}
 	auto t2 = Clock::now();
-	std::cout << "Conversion time: " << (t2 - t1).count() << '\n';
+	log() << "Conversion time: " << millisecondsBetweenTimes(t2, t1) << "ms\n";
 
 
-	//auto graphviz = MakeGraphviz(vertexes);
 	auto itBegin = std::find_if(vertexes.begin(), vertexes.end(), [&](auto t) -> bool {
 		return t.second.number == begin;
 	});
@@ -302,12 +309,13 @@ DijkstraResult calculatePath(int begin, int goal, stl::stl_data stlData)
 	for (auto& vert : vertexes) {
 		vertexVec[vert.second.number] = &vert.second;
 	}
+	auto graphviz = MakeGraphviz(vertexVec);
 
 	auto tDijkstra1 = Clock::now();
 	auto result = dijkstra(&(itBegin->second), &(itGoal->second), vertexVec);
 	//auto path = aStar(&(itBegin->second), &(itGoal->second), vertexVec);
 	auto tDijkstra2 = Clock::now();
-	std::cout << "Dijkstra time: " << (tDijkstra2 - tDijkstra1).count() << '\n';
+	log() << "Dijkstra time: " << millisecondsBetweenTimes(tDijkstra2, tDijkstra1) << "ms\n";
 
 	return result;
 }
@@ -336,21 +344,22 @@ int main(int argc, char* argv[]) {
 #ifdef WIN32
 	//_CrtSetBreakAlloc(*place some value here to debug*);
 #endif
-	//new GraphVertex(666, stl::point());
+	while (true) {
+		// Nothing is done with the result of 
+		testCase(2, 6, "../../test_models/Box1x1x1.stl");
+		testCase(3, 6, "../../test_models/Box1x1x1.stl");
+		testCase(4, 4, "../../test_models/Box1x1x1.stl");
+		testCase(0, 4, "../../test_models/test_mesh.stl");
+		testCase(1, 4, "../../test_models/separated_triangles.stl"); // should not find a path
 
-	// Nothing is done with the result of 
-	testCase(2, 6, "../../test_models/Box1x1x1.stl");
-	testCase(3, 6, "../../test_models/Box1x1x1.stl");
-	testCase(4, 4, "../../test_models/Box1x1x1.stl");
-	testCase(1, 4, "../../test_models/separated_triangles.stl"); // should not find a path
+		testCase(1, 8, "../../test_models/BRACKET_EVO_II.stl");
+		testCase(1, 8, "../../test_models/BRACKET_EVO_II.STL");
+		testCase(1, 8, "../../test_models/stanford_dragon_flat_base.stl");
+		testCase(1, 90, "../../test_models/voronoi_bunny_with_loop.stl");
 
-	testCase(1, 8, "../../test_models/1_sided_ampr_and_text_alt.stl");
-	testCase(1, 8, "../../test_models/BRACKET_EVO_II.STL");
-	testCase(1, 8, "../../test_models/stanford_dragon_flat_base.stl");
-	testCase(1, 90, "../../test_models/voronoi_bunny_with_loop.stl");
-
+	}
 	std::cin.get();
-	
+
 #ifdef WIN32
 	_CrtDumpMemoryLeaks(); // To verify no memory was leaked.
 #endif

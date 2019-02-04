@@ -1,0 +1,23 @@
+solid PathScene
+ facet normal 0 1 0
+  outer loop
+  vertex 2.5 3 0
+  vertex 2 3.5 0
+  vertex 2 3 0.5
+  endloop
+ endfacet
+ facet normal 0 1 0
+  outer loop
+  vertex 3.5 2 0
+  vertex 3 2.5 0
+  vertex 3 2 0.5
+  endloop
+ endfacet
+ facet normal 0 1 0
+  outer loop
+  vertex 2.5 0 0
+  vertex 2 0.5 0
+  vertex 2 0 0.5
+  endloop
+ endfacet
+endsolid PathScene

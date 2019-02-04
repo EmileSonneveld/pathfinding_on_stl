@@ -1,6 +1,8 @@
 
 stlFileName: ../../test_models/Box1x1x1.stl
 #triangles = 12
+Conversion time: 49ms
+Dijkstra time: 42ms
 pathFound: true
 Length: 2.41421
 Path: 6 0 2 
@@ -8,6 +10,8 @@ Path: 6 0 2
 
 stlFileName: ../../test_models/Box1x1x1.stl
 #triangles = 12
+Conversion time: 30ms
+Dijkstra time: 19ms
 pathFound: true
 Length: 1.41421
 Path: 6 3 
@@ -15,25 +19,42 @@ Path: 6 3
 
 stlFileName: ../../test_models/Box1x1x1.stl
 #triangles = 12
+Conversion time: 32ms
+Dijkstra time: 4ms
 pathFound: true
 Length: 0
 Path: 
 
 
+stlFileName: ../../test_models/test_mesh.stl
+#triangles = 3
+Conversion time: 13ms
+Dijkstra time: 8ms
+pathFound: true
+Length: 3.65028
+Path: 4 3 0 
+
+
 stlFileName: ../../test_models/separated_triangles.stl
 #triangles = 2
+Conversion time: 11ms
+Dijkstra time: 2ms
 pathFound: false
 
 
-stlFileName: ../../test_models/1_sided_ampr_and_text_alt.stl
-#triangles = 28130
+stlFileName: ../../test_models/BRACKET_EVO_II.stl
+#triangles = 53556
+Conversion time: 214974ms
+Dijkstra time: 121821ms
 pathFound: true
-Length: 2.18078
-Path: 8 1 
+Length: 6.61306
+Path: 8 23144 23142 23125 23124 23123 23122 23119 23118 23115 23114 23111 33 35 37 0 1 
 
 
 stlFileName: ../../test_models/BRACKET_EVO_II.STL
 #triangles = 53556
+Conversion time: 80941ms
+Dijkstra time: 128876ms
 pathFound: true
 Length: 6.61306
 Path: 8 23144 23142 23125 23124 23123 23122 23119 23118 23115 23114 23111 33 35 37 0 1 
@@ -41,6 +62,8 @@ Path: 8 23144 23142 23125 23124 23123 23122 23119 23118 23115 23114 23111 33 35 
 
 stlFileName: ../../test_models/stanford_dragon_flat_base.stl
 #triangles = 299890
+Conversion time: 1053919ms
+Dijkstra time: 95092945ms
 pathFound: true
 Length: 10.6847
 Path: 8 4864 76504 57333 22005 22004 14843 6956 6955 53765 70729 68231 109295 87597 93423 1243 1242 33493 82900 43872 43871 70610 19999 15732 15734 96701 96700 108297 94165 64339 50118 50119 2226 18570 18569 75036 73178 49311 4990 93223 17039 17037 21964 21972 57578 10215 51502 90286 115277 59297 633 634 89987 22682 62969 62968 28991 9920 9918 50564 33971 60625 79868 27735 5080 5081 106782 56079 56078 123148 145154 142089 137334 135324 129148 129139 127332 124474 123495 121451 119015 114986 108596 108595 108570 106774 102816 100598 97910 95457 95441 92851 92852 86886 86872 83370 79255 74829 71034 67444 61348 55427 47507 42589 40000 31939 31903 29057 26556 24277 24258 17876 17880 15202 13970 12742 11645 9983 8789 8113 7426 5798 4249 3686 2755 1936 1078 523 140 11 9 1 
@@ -48,7 +71,8 @@ Path: 8 4864 76504 57333 22005 22004 14843 6956 6955 53765 70729 68231 109295 87
 
 stlFileName: ../../test_models/voronoi_bunny_with_loop.stl
 #triangles = 329404
+Conversion time: 471713ms
+Dijkstra time: 277162ms
 pathFound: true
 Length: 3.30007
 Path: 90 77 64 51 38 25 1 
-
