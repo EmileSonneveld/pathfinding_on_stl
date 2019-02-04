@@ -18,18 +18,18 @@
     <ClInclude Include="stl_parser\parse_stl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pathfindingOnStl.h">
+    <ClInclude Include="common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="common.h">
+    <ClInclude Include="OpenNodesHeap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pathfindingOnStl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stl_parser\parse_stl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OpenNodesHeap.h">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OpenNodesHeap.cpp">

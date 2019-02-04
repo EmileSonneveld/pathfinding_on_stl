@@ -1,11 +1,15 @@
+#include <cassert>
+#include <algorithm>
+
 #include "OpenNodesHeap.h"
 
 OpenNodesHeap::OpenNodesHeap(std::vector<GraphVertex*>& vertexes) :vertexSet(vertexes)
 {
+	// The following line would not be needed if we can assure that the start element of dijkstra will be at the correct initial place.
 	std::make_heap(vertexSet.begin(), vertexSet.end(), sortOnDist); // O(3n)
 }
 
-bool OpenNodesHeap::empty()
+bool OpenNodesHeap::empty() const
 {
 	return vertexSet.empty();
 }
@@ -17,18 +21,6 @@ GraphVertex * OpenNodesHeap::pop()
 	std::pop_heap(vertexSet.begin(), vertexSet.end(), sortOnDist); // O(2 lg(n))
 	vertexSet.pop_back();
 	return tmp;
-}
-
-unsigned int OpenNodesHeap::heapGetParentIndex(unsigned int i) {
-	return (int)floor((i - 1) / 2);
-}
-
-unsigned int OpenNodesHeap::heapGetLeftChild(unsigned int i) {
-	return (i * 2) + 1;
-}
-
-unsigned int OpenNodesHeap::heapGetRightChild(unsigned int i) {
-	return (i * 2) + 2;
 }
 
 void OpenNodesHeap::heapSwap(unsigned int ia, unsigned int ib) {
@@ -76,7 +68,7 @@ void OpenNodesHeap::heapRevalidateElement(int index) {
 	heapSiftDown(index);
 }
 
-int OpenNodesHeap::heapSearchElementIndex(GraphVertex * needle, unsigned int finger) {
+int OpenNodesHeap::heapSearchElementIndex(const GraphVertex* needle, unsigned int finger) {
 	if (finger >= vertexSet.size())
 		return -1;
 	auto el = vertexSet[finger];
@@ -89,4 +81,16 @@ int OpenNodesHeap::heapSearchElementIndex(GraphVertex * needle, unsigned int fin
 	auto r = heapSearchElementIndex(needle, heapGetRightChild(finger));
 	if (r != -1) return r;
 	return -1;
+}
+
+unsigned int heapGetParentIndex(unsigned int i) {
+	return (int)floor((i - 1) / 2);
+}
+
+unsigned int heapGetLeftChild(unsigned int i) {
+	return (i * 2) + 1;
+}
+
+unsigned int heapGetRightChild(unsigned int i) {
+	return (i * 2) + 2;
 }

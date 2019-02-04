@@ -139,15 +139,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="common.h" />
+    <ClInclude Include="OpenNodesHeap.h" />
     <ClInclude Include="pathfindingOnStl.h" />
     <ClInclude Include="stl_parser\parse_stl.h" />
-    <ClInclude Include="common.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pathfindingOnStl.cpp" />
     <ClCompile Include="OpenNodesHeap.cpp" />
-    <ClCompile Include="OpenNodesHeap.h" />
     <ClCompile Include="stl_parser\parse_stl.cpp" />
     <ClCompile Include="common.cpp" />
   </ItemGroup>

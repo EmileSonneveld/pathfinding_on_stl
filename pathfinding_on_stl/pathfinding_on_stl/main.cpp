@@ -11,7 +11,7 @@
 #endif
 
 
-void testCase(stl::point begin, stl::point goal, std::string stlFileName) // stl::point begin, 
+void testCase(const stl::point& begin, const stl::point& goal, const std::string& stlFileName) // stl::point begin, 
 {
 	auto stlData = stl::parse_stl(stlFileName);
 

@@ -2,6 +2,5 @@
 
 #include "stl_parser/parse_stl.h"
 #include "common.h"
-#include "OpenNodesHeap.h"
 
-DijkstraResult calculatePath(stl::point begin, stl::point goal, stl::stl_data stlData);
+DijkstraResult calculatePath(const stl::point& begin, const stl::point& goal, const stl::stl_data& stlData);

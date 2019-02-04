@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
-
+#include <cassert>
 
 #include "stl_parser/parse_stl.h"
 #include "common.h"
@@ -39,6 +39,7 @@ std::string debugOutput(const std::vector<GraphVertex*>& vertexes) {
 
 // Based on: https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
 // Modified for better performance.
+// Note that this will edit the temporary vertex list.
 DijkstraResult dijkstra(GraphVertex* begin, GraphVertex* goal, std::vector<GraphVertex*>& vertexes)
 {
 	if (begin == goal) {
@@ -167,7 +168,7 @@ std::vector<vertex*> aStar(vertex* begin, vertex* goal, std::vector<vertex*>& ve
 
 
 // For debuging small meshes.
-std::string MakeGraphviz(std::vector<GraphVertex*>& const vertexes)
+std::string MakeGraphviz(const std::vector<GraphVertex*>& vertexes)
 {
 	std::stringstream str;
 	str << "# You can visualise this file here: http://webgraphviz.com\n";
@@ -188,15 +189,12 @@ std::string MakeGraphviz(std::vector<GraphVertex*>& const vertexes)
 
 typedef std::chrono::high_resolution_clock Clock;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
-long long millisecondsBetweenTimes(TimePoint t1, TimePoint t2)
+long long millisecondsBetweenTimes(const TimePoint t1, const TimePoint t2)
 {
 	return (t1 - t2).count() / 1000;
 }
 
-// This is the actual functionality as defined in the assignement.
-
-// This is the actual functionality as defined in the assignement.
-DijkstraResult calculatePath(stl::point begin, stl::point goal, stl::stl_data stlData)
+DijkstraResult calculatePath(const stl::point& begin, const stl::point& goal, const stl::stl_data& stlData)
 {
 	auto vertexes = std::map<stl::point, GraphVertex>();
 
@@ -221,6 +219,7 @@ DijkstraResult calculatePath(stl::point begin, stl::point goal, stl::stl_data st
 			v2->neigbours.insert(v1);
 		}
 	};
+
 	for (auto t : stlData.triangles) {
 		auto& v1 = assureVertex(t.v1);
 		auto& v2 = assureVertex(t.v2);
@@ -245,7 +244,7 @@ DijkstraResult calculatePath(stl::point begin, stl::point goal, stl::stl_data st
 	for (auto& vert : vertexes) {
 		vertexVec[vert.second.number] = &vert.second;
 	}
-	auto graphviz = MakeGraphviz(vertexVec);
+	//auto graphviz = MakeGraphviz(vertexVec);
 
 	auto tDijkstra1 = Clock::now();
 	auto result = dijkstra(&(itBegin->second), &(itGoal->second), vertexVec);

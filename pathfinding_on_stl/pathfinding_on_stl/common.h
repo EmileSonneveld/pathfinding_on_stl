@@ -3,16 +3,9 @@
 #include <vector>
 #include <set>
 #include <algorithm>
-
-#include <vector>
-#include <set>
-#include <map>
-#include <algorithm>
 #include <string>
-#include <sstream>
 #include <iostream>
 #include <fstream>
-#include <chrono>
 
 #include "stl_parser/parse_stl.h"
 
@@ -22,7 +15,6 @@ struct ResultVertex {
 	}
 	int number;
 	stl::point p;
-
 };
 
 struct GraphVertex : ResultVertex {
@@ -40,7 +32,7 @@ struct GraphVertex : ResultVertex {
 	}
 };
 
-bool sortOnDist(GraphVertex* v1, GraphVertex* v2);
+bool sortOnDist(const GraphVertex* v1, const GraphVertex* v2);
 
 
 struct DijkstraResult
@@ -51,7 +43,8 @@ public:
 	{
 	}
 
-	std::string MakePlainTextStlFromGraph();
+	std::string MakePlainTextStlFromGraph() const;
+	bool pathFound() const;
 
 	std::vector<ResultVertex> path;
 	double length;
